@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bingo des Soft Skills - Autoévaluation</title>
+  <meta name="description" content="Une activité interactive d'autoévaluation des compétences professionnelles (soft skills) pour les apprentis.">
+
+  <!-- Police Fira Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS via CDN pour portabilité autonome maximale -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Fira Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              dark: '#1a4b7c',
+              hover: '#2563eb',
+              yellow: '#f7de9f',
+              green: '#cae9ab',
+              blue: '#a1d6f5',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    :root {
+      --color-brand-dark: #1a4b7c;
+      --color-yellow: #f7de9f;
+      --color-green: #cae9ab;
+      --color-blue: #a1d6f5;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Fira Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1a4b7c;
+      background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #93c5fd 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Animations fluides */
+    .screen-fade {
+      animation: fadeInScale 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fadeInScale {
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Cases Bingo */
+    .bingo-case {
+      aspect-ratio: 1 / 1;
+      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease, border-color 0.15s ease;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .bingo-case:hover {
+      transform: translateY(-4px) scale(1.03);
+    }
+
+    .bingo-case:active {
+      transform: scale(0.95);
+    }
+
+    .bingo-case.is-selected {
+      border-color: #1a4b7c !important;
+      box-shadow: 0 0 0 4px rgba(26, 75, 124, 0.18), 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .check-badge {
+      animation: popIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes popIn {
+      0% {
+        transform: scale(0) rotate(-45deg);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+      }
+    }
+
+    /* Focus visible accessible */
+    button:focus-visible, a:focus-visible {
+      outline: 3px solid #1a4b7c;
+      outline-offset: 3px;
+    }
+
+    /* Style d'impression pour l'export */
+    @media print {
+      body {
+        background: white !important;
+        color: #000 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      .shadow-2xl, .shadow-xl, .shadow-lg {
+        box-shadow: none !important;
+      }
+      .screen-container {
+        border: 1px solid #ccc !important;
+        max-width: 100% !important;
+        padding: 1.5rem !important;
+      }
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen text-[#1a4b7c] relative overflow-x-hidden selection:bg-[#a1d6f5] selection:text-[#1a4b7c]">
+
+  <!-- Barre d'outils supérieure : Bouton Plein Écran & Indicateur de sauvegarde -->
+  <header class="w-full p-4 md:p-6 flex items-center justify-between pointer-events-none z-50 fixed top-0 left-0 no-print">
+    <div class="pointer-events-auto flex items-center gap-2">
+      <!-- Indicateur d'enregistrement automatique -->
+      <div id="saveIndicator" class="opacity-0 transition-opacity duration-300 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold text-[#1a4b7c] shadow-md border border-[#1a4b7c]/10 flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>Progression sauvegardée</span>
+      </div>
+    </div>
+
+    <!-- Bouton Plein Écran -->
+    <button 
+      id="fullscreenBtn" 
+      class="pointer-events-auto bg-white/90 hover:bg-white backdrop-blur-md text-[#1a4b7c] font-bold py-2.5 px-4 md:px-5 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 border border-[#1a4b7c]/10 active:scale-95 group cursor-pointer"
+      aria-label="Basculer en plein écran"
+      title="Basculer en plein écran"
+    >
+      <!-- Icône Plein écran entrant -->
+      <svg id="fullscreenIconEnter" class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+      </svg>
+      <!-- Icône Plein écran sortant (cachée par défaut) -->
+      <svg id="fullscreenIconExit" class="w-5 h-5 hidden transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 4v4m0 0H5m4 0L4 3m6 17v-4m0 0H5m4 0l-5 5m10-17h4m-4 0v4m0-4l5 5m-5 12h4m-4 0v-4m0 4l5-5" />
+      </svg>
+      <span id="fullscreenText" class="hidden sm:inline text-sm">Plein écran</span>
+    </button>
+  </header>
+
+  <!-- Contenu Principal -->
+  <main class="flex-grow flex items-center justify-center p-4 md:p-8 pt-20 md:pt-24 pb-8 w-full max-w-7xl mx-auto">
+
+    <!-- ========================================== -->
+    <!-- ÉCRAN 1 : PAGE DE CONSIGNES                -->
+    <!-- ========================================== -->
+    <section id="screen-instructions" class="screen-container max-w-3xl w-full bg-white rounded-[2.5rem] p-6 sm:p-8 md:p-12 shadow-2xl border-4 border-[#1a4b7c]/5 relative overflow-hidden screen-fade">
+      <!-- Éléments décoratifs en arrière-plan -->
+      <div class="absolute -top-24 -right-24 w-64 h-64 bg-[#a1d6f5]/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-[#cae9ab]/20 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="relative z-10">
+        <div class="text-center mb-10 md:mb-12">
+          <div class="inline-block bg-[#1a4b7c]/5 p-4 rounded-3xl mb-5 shadow-sm">
+            <!-- Target Icon -->
+            <svg class="w-12 h-12 text-[#1a4b7c]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" stroke-linecap="round" stroke-linejoin="round"></circle>
+              <circle cx="12" cy="12" r="6" stroke-linecap="round" stroke-linejoin="round"></circle>
+              <circle cx="12" cy="12" r="2" stroke-linecap="round" stroke-linejoin="round"></circle>
+            </svg>
+          </div>
+          <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-[#1a4b7c] mb-3 tracking-tight">
+            Bingo des Soft Skills
+          </h1>
+          <p class="text-lg sm:text-xl text-[#1a4b7c]/70 font-medium max-w-lg mx-auto">
+            Une autoévaluation ludique pour faire le point sur vos compétences professionnelles.
+          </p>
+        </div>
+
+        <div class="grid gap-5 sm:gap-6 mb-10 md:mb-12">
+          <!-- Carte 1 -->
+          <div class="flex items-start gap-4 sm:gap-5 bg-[#f8fafc] p-5 sm:p-6 rounded-3xl border border-slate-100">
+            <div class="bg-[#f7de9f] p-3 rounded-2xl shadow-sm flex-shrink-0">
+              <svg class="w-6 h-6 text-[#1a4b7c]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-base sm:text-lg font-bold text-[#1a4b7c] mb-1">Sélectionnez vos acquis</h2>
+              <p class="text-sm sm:text-base text-[#1a4b7c]/65">Cliquez sur chaque affirmation qui correspond à votre situation actuelle. Vous pouvez décocher en cas d'erreur.</p>
+            </div>
+          </div>
+
+          <!-- Carte 2 -->
+          <div class="flex items-start gap-4 sm:gap-5 bg-[#f8fafc] p-5 sm:p-6 rounded-3xl border border-slate-100">
+            <div class="bg-[#cae9ab] p-3 rounded-2xl shadow-sm flex-shrink-0">
+              <svg class="w-6 h-6 text-[#1a4b7c]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <circle cx="12" cy="8" r="6" stroke-linecap="round" stroke-linejoin="round" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-base sm:text-lg font-bold text-[#1a4b7c] mb-1">Cumulez des points</h2>
+              <p class="text-sm sm:text-base text-[#1a4b7c]/65">Chaque case cochée vous rapporte des points qui s'ajoutent au compteur de la compétence.</p>
+            </div>
+          </div>
+
+          <!-- Carte 3 -->
+          <div class="flex items-start gap-4 sm:gap-5 bg-[#1a4b7c] p-5 sm:p-6 rounded-3xl shadow-xl shadow-[#1a4b7c]/10">
+            <div class="bg-white/20 p-3 rounded-2xl backdrop-blur-sm flex-shrink-0">
+              <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-base sm:text-lg font-bold text-white mb-1">Objectif de validation</h2>
+              <p class="text-sm sm:text-base text-white/85">Obtenez au moins <span class="text-white font-black underline decoration-[#cae9ab] decoration-4 underline-offset-4">8 points</span> par compétence pour accéder au quiz final.</p>
+            </div>
+          </div>
+        </div>
+
+        <button
+          id="startBingoBtn"
+          class="w-full bg-[#1a4b7c] hover:bg-[#2563eb] text-white text-lg sm:text-xl font-bold py-4 sm:py-5 px-8 rounded-[2rem] transition-all duration-200 flex items-center justify-center gap-3 shadow-xl hover:shadow-2xl active:scale-[0.98] group cursor-pointer"
+        >
+          <span>Commencer l'aventure</span>
+          <svg class="w-6 h-6 group-hover:translate-x-2 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- ÉCRAN 2 : GRILLE DU BINGO                  -->
+    <!-- ========================================== -->
+    <section id="screen-bingo" class="screen-container max-w-6xl w-full bg-white/95 backdrop-blur-md rounded-[2.5rem] sm:rounded-[3rem] p-5 sm:p-8 md:p-12 shadow-2xl border-4 border-[#1a4b7c]/5 hidden screen-fade">
+      <div class="text-center mb-8 sm:mb-12">
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-[#1a4b7c]">Ma Grille de Compétences</h1>
+        <p class="text-sm sm:text-base text-[#1a4b7c]/60 mt-1 sm:mt-2 font-medium">Cliquez sur chaque affirmation qui correspond à votre pratique</p>
+      </div>
+
+      <!-- Grille générée dynamiquement -->
+      <div id="bingoGridContainer" class="space-y-10 sm:space-y-12">
+        <!-- Rempli par JavaScript -->
+      </div>
+
+      <!-- Actions sous la grille -->
+      <div class="mt-12 sm:mt-16 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <button
+          id="seeResultsBtn"
+          class="w-full sm:w-auto bg-[#1a4b7c] hover:bg-[#2563eb] text-white text-lg sm:text-xl font-bold py-4 sm:py-5 px-12 sm:px-16 rounded-[2rem] transition-all duration-200 shadow-xl hover:shadow-2xl active:scale-[0.98] flex items-center justify-center gap-3 group cursor-pointer"
+        >
+          <span>Voir mes résultats</span>
+          <svg class="w-6 h-6 group-hover:translate-x-1.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- ÉCRAN 3 : BILAN DES RÉSULTATS              -->
+    <!-- ========================================== -->
+    <section id="screen-results" class="screen-container max-w-3xl w-full bg-white rounded-[2.5rem] sm:rounded-[3rem] p-6 sm:p-8 md:p-12 shadow-2xl border-4 border-[#1a4b7c]/5 hidden screen-fade">
+      <div class="text-center mb-8 sm:mb-12">
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-[#1a4b7c]">
+          Votre Bilan de Compétences
+        </h1>
+        <p class="text-sm sm:text-base text-[#1a4b7c]/60 mt-2 font-medium">Récapitulatif de votre autoévaluation des Soft Skills</p>
+      </div>
+
+      <!-- Barres de progression des 3 compétences -->
+      <div id="resultsProgressContainer" class="space-y-8 sm:space-y-10 mb-10 sm:mb-12">
+        <!-- Rempli par JavaScript -->
+      </div>
+
+      <!-- Encadré conditionnel de recommandation / félicitations -->
+      <div id="resultsFeedbackBox" class="bg-[#f8fafc] rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 md:p-10 border-2 border-slate-100 mb-8 sm:mb-10 text-center relative overflow-hidden">
+        <!-- Rempli par JavaScript -->
+      </div>
+
+      <!-- Actions de fin : Exporter / Imprimer & Recommencer -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2 no-print">
+        <button
+          id="printResultsBtn"
+          class="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-[#1a4b7c] font-bold py-3 px-6 rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 border border-slate-200 active:scale-95 cursor-pointer text-sm sm:text-base"
+          title="Imprimer ou enregistrer en PDF"
+        >
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+          <span>Exporter / Imprimer mon bilan</span>
+        </button>
+
+        <button
+          id="backToBingoBtn"
+          class="w-full sm:w-auto text-[#1a4b7c]/70 hover:text-[#1a4b7c] font-bold py-3 px-6 rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 hover:bg-slate-50 cursor-pointer text-sm sm:text-base"
+        >
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+          </svg>
+          <span>Modifier ma grille</span>
+        </button>
+      </div>
+
+      <div class="mt-6 text-center no-print">
+        <button
+          id="resetBingoBtn"
+          class="inline-flex items-center justify-center gap-2 text-[#1a4b7c]/40 font-bold hover:text-[#1a4b7c] transition-colors py-2 text-sm group cursor-pointer"
+        >
+          <svg class="w-4 h-4 group-hover:-rotate-45 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Réinitialiser et recommencer le bingo</span>
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- JAVASCRIPT VANILLA AUTONOME                -->
+  <!-- ========================================== -->
+  <script>
+    // Structure des données du Bingo (conforme à l'existant)
+    const BINGO_DATA = [
+      {
+        id: 'posture',
+        title: 'POSTURE PROFESSIONNELLE',
+        cases: [
+          { id: 'p4', text: 'Je connais les normes implicites spécifiques à mon métier', points: 3, color: '#a1d6f5' },
+          { id: 'p1', text: 'Je connais mes horaires de travail', points: 1, color: '#f7de9f' },
+          { id: 'p3', text: 'Je sais où trouver les règles dans mon contexte professionnel', points: 2, color: '#cae9ab' },
+          { id: 'p5', text: 'Je comprends la différence entre norme implicite et norme explicite', points: 3, color: '#a1d6f5' },
+          { id: 'p2', text: 'Je connais la tenue attendue sur mon lieu de travail', points: 2, color: '#cae9ab' },
+        ],
+      },
+      {
+        id: 'communication',
+        title: 'COMMUNICATION',
+        cases: [
+          { id: 'c2', text: "Je comprends les risques d'une mauvaise communication", points: 2, color: '#cae9ab' },
+          { id: 'c4', text: "Je connais les principes de l'écoute active", points: 3, color: '#a1d6f5' },
+          { id: 'c1', text: 'Je connais les 3 types de communication', points: 1, color: '#f7de9f' },
+          { id: 'c5', text: 'Je sais comment refuser une sollicitation de manière professionnelle', points: 3, color: '#a1d6f5' },
+          { id: 'c3', text: 'Je connais le lexique spécifique de mon métier', points: 2, color: '#cae9ab' },
+        ],
+      },
+      {
+        id: 'autonomie',
+        title: 'AUTONOMIE',
+        cases: [
+          { id: 'a3', text: 'Je connais la différence entre tâche urgente et tâche importante', points: 2, color: '#cae9ab' },
+          { id: 'a1', text: 'Je connais les consignes données par mon tuteur', points: 1, color: '#f7de9f' },
+          { id: 'a5', text: "Je connais des outils pour m'aider à gérer mon temps de travail", points: 3, color: '#a1d6f5' },
+          { id: 'a2', text: "Lorsque je n'ai pas compris je sais à qui poser des questions", points: 2, color: '#cae9ab' },
+          { id: 'a4', text: 'Je sais identifier les priorités dans mon travail', points: 3, color: '#a1d6f5' },
+        ],
+      },
+    ];
+
+    const STORAGE_KEY_SELECTION = 'bingo_soft_skills_selected';
+    const STORAGE_KEY_SCREEN = 'bingo_soft_skills_screen';
+
+    // État de l'application
+    let currentScreen = 'instructions';
+    let selectedCaseIds = new Set();
+    let saveTimeout = null;
+
+    // Chargement de l'état sauvegardé
+    function loadSavedState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_SELECTION);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            selectedCaseIds = new Set(parsed);
+          }
+        }
+        const savedScreen = localStorage.getItem(STORAGE_KEY_SCREEN);
+        if (savedScreen && ['instructions', 'bingo', 'results'].includes(savedScreen)) {
+          // Si l'utilisateur avait déjà démarré, on peut restaurer l'écran
+          currentScreen = savedScreen;
+        }
+      } catch (e) {
+        console.warn('Impossible de charger les données locales', e);
+      }
+    }
+
+    // Sauvegarde automatique
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY_SELECTION, JSON.stringify(Array.from(selectedCaseIds)));
+        localStorage.setItem(STORAGE_KEY_SCREEN, currentScreen);
+        
+        // Afficher l'indicateur de sauvegarde brièvement
+        const indicator = document.getElementById('saveIndicator');
+        if (indicator) {
+          indicator.classList.remove('opacity-0');
+          clearTimeout(saveTimeout);
+          saveTimeout = setTimeout(() => {
+            indicator.classList.add('opacity-0');
+          }, 1500);
+        }
+      } catch (e) {
+        console.warn('Erreur lors de la sauvegarde locale', e);
+      }
+    }
+
+    // Calcul des points pour une compétence
+    function getPointsForCompetence(competenceId) {
+      const comp = BINGO_DATA.find(c => c.id === competenceId);
+      if (!comp) return 0;
+      return comp.cases
+        .filter(c => selectedCaseIds.has(c.id))
+        .reduce((sum, c) => sum + c.points, 0);
+    }
+
+    // Navigation entre écrans
+    function setScreen(screen) {
+      currentScreen = screen;
+      saveState();
+
+      const screens = {
+        instructions: document.getElementById('screen-instructions'),
+        bingo: document.getElementById('screen-bingo'),
+        results: document.getElementById('screen-results'),
+      };
+
+      Object.entries(screens).forEach(([key, el]) => {
+        if (!el) return;
+        if (key === screen) {
+          el.classList.remove('hidden');
+          // Forcer le reflow pour relancer l'animation
+          el.classList.remove('screen-fade');
+          void el.offsetWidth;
+          el.classList.add('screen-fade');
+        } else {
+          el.classList.add('hidden');
+        }
+      });
+
+      if (screen === 'bingo') {
+        renderBingoGrid();
+      } else if (screen === 'results') {
+        renderResults();
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Toggle d'une case
+    function toggleCase(caseId) {
+      if (selectedCaseIds.has(caseId)) {
+        selectedCaseIds.delete(caseId);
+      } else {
+        selectedCaseIds.add(caseId);
+      }
+      saveState();
+      updateBingoRow(caseId);
+    }
+
+    // Génération de la grille de Bingo (3 lignes x 5 colonnes uniformes)
+    function renderBingoGrid() {
+      const container = document.getElementById('bingoGridContainer');
+      if (!container) return;
+
+      container.innerHTML = BINGO_DATA.map(competence => {
+        const rowScore = getPointsForCompetence(competence.id);
+        const isValidated = rowScore >= 8;
+
+        const casesHtml = competence.cases.map(bCase => {
+          const isSelected = selectedCaseIds.has(bCase.id);
+          return `
+            <div class="flex flex-col items-center">
+              <button
+                type="button"
+                id="case-${bCase.id}"
+                data-case-id="${bCase.id}"
+                data-competence-id="${competence.id}"
+                role="checkbox"
+                aria-checked="${isSelected}"
+                aria-label="${bCase.text.replace(/"/g, '&quot;')}"
+                class="bingo-case relative aspect-square w-full rounded-2xl p-3 md:p-4 text-center border-4 flex items-center justify-center shadow-lg group cursor-pointer ${isSelected ? 'is-selected' : 'border-white hover:border-[#1a4b7c]/20'}"
+                style="background-color: ${bCase.color};"
+              >
+                <span class="text-[10px] sm:text-xs md:text-sm font-bold leading-tight text-[#1a4b7c] select-none break-words overflow-hidden pointer-events-none">
+                  ${bCase.text}
+                </span>
+
+                <!-- Badge checkmark -->
+                <div class="check-badge absolute -top-2 -right-2 bg-[#1a4b7c] text-white rounded-full p-1 shadow-lg border-2 border-white z-20 ${isSelected ? '' : 'hidden'}">
+                  <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </button>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="relative competence-row" data-competence="${competence.id}">
+            <!-- En-tête de la ligne de compétence -->
+            <div class="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 px-1">
+              <div class="w-3 h-7 sm:h-8 rounded-full ${isValidated ? 'bg-[#cae9ab]' : 'bg-[#1a4b7c]/15'} transition-colors duration-300"></div>
+              <h3 class="text-lg sm:text-xl font-black text-[#1a4b7c] tracking-wide">
+                ${competence.title}
+              </h3>
+            </div>
+
+            <div class="flex flex-col lg:flex-row items-center gap-6 md:gap-8">
+              <!-- Grille des 5 cases carrées -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 md:gap-6 flex-grow w-full">
+                ${casesHtml}
+              </div>
+
+              <!-- Bloc Compteur de points à droite -->
+              <div class="flex-shrink-0 w-full lg:w-40">
+                <div 
+                  id="scoreBox-${competence.id}"
+                  class="w-full py-4 sm:py-6 rounded-[2rem] flex flex-col items-center justify-center border-4 shadow-inner transition-all duration-300 ${
+                    isValidated 
+                      ? 'bg-[#cae9ab] border-[#166534] scale-[1.03]' 
+                      : 'bg-[#f8fafc] border-[#e2e8f0]'
+                  }"
+                >
+                  <span id="scoreValue-${competence.id}" class="text-3xl sm:text-4xl font-black ${isValidated ? 'text-[#166534]' : 'text-[#1a4b7c]'}">
+                    ${rowScore}
+                  </span>
+                  <span class="text-xs font-bold uppercase tracking-widest ${isValidated ? 'text-[#166534]/70' : 'text-[#1a4b7c]/40'}">
+                    points
+                  </span>
+                  <div id="scoreBadge-${competence.id}" class="mt-2 bg-[#166534] text-white rounded-full p-1 transition-transform duration-300 ${isValidated ? 'scale-100' : 'scale-0 hidden'}">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Ajout des écouteurs d'événements sur chaque case
+      container.querySelectorAll('.bingo-case').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const caseId = btn.getAttribute('data-case-id');
+          toggleCase(caseId);
+        });
+
+        // Accessibilité clavier
+        btn.addEventListener('keydown', (e) => {
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            const caseId = btn.getAttribute('data-case-id');
+            toggleCase(caseId);
+          }
+        });
+      });
+    }
+
+    // Mise à jour ciblée d'une case et de son compteur sans tout redessiner
+    function updateBingoRow(caseId) {
+      const btn = document.getElementById(`case-${caseId}`);
+      if (!btn) return;
+
+      const isSelected = selectedCaseIds.has(caseId);
+      btn.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+
+      const badge = btn.querySelector('.check-badge');
+      if (isSelected) {
+        btn.classList.add('is-selected');
+        btn.classList.remove('border-white', 'hover:border-[#1a4b7c]/20');
+        if (badge) badge.classList.remove('hidden');
+      } else {
+        btn.classList.remove('is-selected');
+        btn.classList.add('border-white', 'hover:border-[#1a4b7c]/20');
+        if (badge) badge.classList.add('hidden');
+      }
+
+      // Mise à jour du score de la compétence
+      const compId = btn.getAttribute('data-competence-id');
+      if (!compId) return;
+
+      const score = getPointsForCompetence(compId);
+      const isValidated = score >= 8;
+
+      const scoreVal = document.getElementById(`scoreValue-${compId}`);
+      const scoreBox = document.getElementById(`scoreBox-${compId}`);
+      const scoreBadge = document.getElementById(`scoreBadge-${compId}`);
+
+      if (scoreVal) {
+        scoreVal.textContent = score;
+        scoreVal.className = `text-3xl sm:text-4xl font-black ${isValidated ? 'text-[#166534]' : 'text-[#1a4b7c]'}`;
+      }
+
+      if (scoreBox) {
+        if (isValidated) {
+          scoreBox.className = 'w-full py-4 sm:py-6 rounded-[2rem] flex flex-col items-center justify-center border-4 shadow-inner transition-all duration-300 bg-[#cae9ab] border-[#166534] scale-[1.03]';
+        } else {
+          scoreBox.className = 'w-full py-4 sm:py-6 rounded-[2rem] flex flex-col items-center justify-center border-4 shadow-inner transition-all duration-300 bg-[#f8fafc] border-[#e2e8f0]';
+        }
+      }
+
+      if (scoreBadge) {
+        if (isValidated) {
+          scoreBadge.classList.remove('hidden', 'scale-0');
+          scoreBadge.classList.add('scale-100');
+        } else {
+          scoreBadge.classList.add('hidden', 'scale-0');
+          scoreBadge.classList.remove('scale-100');
+        }
+      }
+    }
+
+    // Rendu de l'écran 3 (Résultats)
+    function renderResults() {
+      const progressContainer = document.getElementById('resultsProgressContainer');
+      const feedbackBox = document.getElementById('resultsFeedbackBox');
+      if (!progressContainer || !feedbackBox) return;
+
+      const results = BINGO_DATA.map(comp => {
+        const score = getPointsForCompetence(comp.id);
+        return {
+          id: comp.id,
+          title: comp.title,
+          score: score,
+          isValidated: score >= 8,
+        };
+      });
+
+      const allValidated = results.every(r => r.isValidated);
+
+      // Génération des barres de progression
+      progressContainer.innerHTML = results.map(r => {
+        const percent = Math.min(100, Math.round((r.score / 11) * 100));
+        return `
+          <div class="space-y-3">
+            <div class="flex justify-between items-end px-1">
+              <h3 class="text-base sm:text-lg font-black text-[#1a4b7c] uppercase tracking-wide">${r.title}</h3>
+              <span class="text-xs sm:text-sm font-bold text-[#1a4b7c]/60">${r.score} / 11 pts</span>
+            </div>
+            <div class="h-5 sm:h-6 w-full bg-slate-50 rounded-full overflow-hidden border-2 border-slate-100 p-1">
+              <div
+                class="h-full rounded-full transition-all duration-1000 ease-out shadow-sm ${r.isValidated ? 'bg-[#cae9ab]' : 'bg-[#f7de9f]'}"
+                style="width: ${percent}%;"
+              ></div>
+            </div>
+            <div class="flex items-center gap-2 px-1">
+              ${r.isValidated 
+                ? `
+                  <div class="inline-flex items-center gap-1.5 text-green-700 font-bold text-xs sm:text-sm bg-green-50 px-3 py-1 rounded-full border border-green-200">
+                    <svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Compétence Validée</span>
+                  </div>
+                ` 
+                : `
+                  <div class="inline-flex items-center gap-1.5 text-amber-700 font-bold text-xs sm:text-sm bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                    <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span>Compétence à renforcer</span>
+                  </div>
+                `
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Encadré de conclusion conditionnelle
+      if (allValidated) {
+        feedbackBox.innerHTML = `
+          <div class="text-5xl sm:text-6xl mb-4 sm:mb-6 animate-bounce">🎉</div>
+          <h2 class="text-xl sm:text-2xl md:text-3xl font-black text-[#1a4b7c] mb-3">
+            Félicitations !
+          </h2>
+          <p class="text-base sm:text-lg text-[#1a4b7c]/70 mb-8 max-w-md mx-auto font-medium">
+            Vous avez validé l'ensemble des compétences. Vous pouvez désormais accéder directement au quiz final !
+          </p>
+          <button 
+            type="button"
+            onclick="alert('Redirection vers le Quiz Final')"
+            class="w-full bg-green-600 hover:bg-green-700 text-white text-lg sm:text-xl font-bold py-4 sm:py-5 px-8 rounded-2xl transition-all duration-200 flex items-center justify-center gap-3 shadow-xl hover:shadow-green-900/20 active:scale-[0.98] group cursor-pointer"
+          >
+            <span>Passer le quiz final</span>
+            <svg class="w-6 h-6 group-hover:translate-x-1.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </button>
+        `;
+      } else {
+        const invalidCompetences = results.filter(r => !r.isValidated);
+        const listHtml = invalidCompetences.map(c => `
+          <li class="flex items-center gap-3 text-[#1a4b7c] font-bold bg-slate-50 p-3 rounded-2xl border border-slate-100">
+            <div class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50 flex-shrink-0"></div>
+            <span>${c.title}</span>
+          </li>
+        `).join('');
+
+        feedbackBox.innerHTML = `
+          <div class="text-5xl sm:text-6xl mb-4 sm:mb-6">📚</div>
+          <h2 class="text-xl sm:text-2xl md:text-3xl font-black text-[#1a4b7c] mb-3">
+            Encore un petit effort...
+          </h2>
+          <p class="text-base sm:text-lg text-[#1a4b7c]/70 mb-6 max-w-md mx-auto font-medium">
+            Certaines compétences méritent d'être approfondies. Nous vous conseillons de suivre la formation pour consolider vos acquis.
+          </p>
+          
+          <div class="text-left mb-8 bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm max-w-lg mx-auto">
+            <p class="font-black text-[#1a4b7c]/50 mb-3 text-xs uppercase tracking-widest">Compétence(s) recommandée(s) :</p>
+            <ul class="space-y-2.5">
+              ${listHtml}
+            </ul>
+          </div>
+
+          <a
+            href="https://1001parcours.cci.fr/experience/mod/page/view.php?id=1711"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="w-full bg-[#1a4b7c] hover:bg-[#2563eb] text-white text-lg sm:text-xl font-bold py-4 sm:py-5 px-8 rounded-2xl transition-all duration-200 flex items-center justify-center gap-3 shadow-xl hover:shadow-[#1a4b7c]/20 active:scale-[0.98] group cursor-pointer"
+          >
+            <span>Accéder à la formation</span>
+            <svg class="w-6 h-6 group-hover:translate-x-1.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </a>
+        `;
+      }
+    }
+
+    // Gestion du plein écran avec API standard
+    function setupFullscreen() {
+      const btn = document.getElementById('fullscreenBtn');
+      const iconEnter = document.getElementById('fullscreenIconEnter');
+      const iconExit = document.getElementById('fullscreenIconExit');
+      const text = document.getElementById('fullscreenText');
+      if (!btn) return;
+
+      function updateUI() {
+        const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+        if (isFull) {
+          iconEnter.classList.add('hidden');
+          iconExit.classList.remove('hidden');
+          if (text) text.textContent = 'Quitter plein écran';
+          btn.setAttribute('aria-label', 'Quitter le mode plein écran');
+        } else {
+          iconEnter.classList.remove('hidden');
+          iconExit.classList.add('hidden');
+          if (text) text.textContent = 'Plein écran';
+          btn.setAttribute('aria-label', 'Activer le mode plein écran');
+        }
+      }
+
+      btn.addEventListener('click', () => {
+        try {
+          if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
+            const root = document.documentElement;
+            if (root.requestFullscreen) {
+              root.requestFullscreen();
+            } else if (root.webkitRequestFullscreen) {
+              root.webkitRequestFullscreen();
+            } else if (root.mozRequestFullScreen) {
+              root.mozRequestFullScreen();
+            } else if (root.msRequestFullscreen) {
+              root.msRequestFullscreen();
+            }
+          } else {
+            if (document.exitFullscreen) {
+              document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+              document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+              document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+              document.msExitFullscreen();
+            }
+          }
+        } catch (err) {
+          console.warn('Plein écran non supporté ou bloqué :', err);
+        }
+      });
+
+      document.addEventListener('fullscreenchange', updateUI);
+      document.addEventListener('webkitfullscreenchange', updateUI);
+      document.addEventListener('mozfullscreenchange', updateUI);
+      document.addEventListener('MSFullscreenChange', updateUI);
+    }
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSavedState();
+      setupFullscreen();
+
+      // Bouton Commencer
+      const startBtn = document.getElementById('startBingoBtn');
+      if (startBtn) {
+        startBtn.addEventListener('click', () => setScreen('bingo'));
+      }
+
+      // Bouton Voir mes résultats
+      const seeResultsBtn = document.getElementById('seeResultsBtn');
+      if (seeResultsBtn) {
+        seeResultsBtn.addEventListener('click', () => setScreen('results'));
+      }
+
+      // Bouton Modifier ma grille depuis les résultats
+      const backToBingoBtn = document.getElementById('backToBingoBtn');
+      if (backToBingoBtn) {
+        backToBingoBtn.addEventListener('click', () => setScreen('bingo'));
+      }
+
+      // Bouton Imprimer / Exporter
+      const printResultsBtn = document.getElementById('printResultsBtn');
+      if (printResultsBtn) {
+        printResultsBtn.addEventListener('click', () => {
+          window.print();
+        });
+      }
+
+      // Bouton Réinitialiser
+      const resetBtn = document.getElementById('resetBingoBtn');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          if (confirm('Voulez-vous réinitialiser toutes vos réponses et recommencer le bingo ?')) {
+            selectedCaseIds.clear();
+            localStorage.removeItem(STORAGE_KEY_SELECTION);
+            localStorage.removeItem(STORAGE_KEY_SCREEN);
+            setScreen('instructions');
+          }
+        });
+      }
+
+      // Lancer sur l'écran adéquat
+      setScreen(currentScreen);
+    });
+  </script>
+</body>
+</html>
